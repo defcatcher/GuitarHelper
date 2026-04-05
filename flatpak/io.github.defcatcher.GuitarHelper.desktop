@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Guitar Assistant
+Comment=Guitar practice assistant — tuner, metronome, notepad, fretboard
+Exec=guitarhelper
+Icon=io.github.defcatcher.GuitarHelper
+Categories=Audio;Education;
+Terminal=false

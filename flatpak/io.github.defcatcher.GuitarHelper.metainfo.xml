@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.defcatcher.GuitarHelper</id>
+  <launchable type="desktop-id">io.github.defcatcher.GuitarHelper.desktop</launchable>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Guitar Assistant</name>
+  <summary>Minimal desktop assistant for guitar practice</summary>
+  <description>
+    <p>
+      Guitar Assistant brings a tuner, metronome, smart chord notepad, and fretboard visualizer
+      into one focused interface. Audio uses low-latency capture via PortAudio; the UI is built with PyQt6.
+    </p>
+  </description>
+  <developer id="io.github.defcatcher">
+    <name>defcatcher</name>
+  </developer>
+  <url type="homepage">https://github.com/defcatcher/GuitarHelper</url>
+  <url type="bugtracker">https://github.com/defcatcher/GuitarHelper/issues</url>
+  <content_rating type="oars-1.1"/>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/defcatcher/GuitarHelper/main/data/flathub-screenshot.png</image>
+      <caption>Main window</caption>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="0.1.0" date="2026-04-05"/>
+  </releases>
+</component>

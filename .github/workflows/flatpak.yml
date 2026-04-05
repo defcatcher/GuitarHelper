@@ -1,0 +1,37 @@
+# Verifies the Flathub-oriented manifest (KDE 6.10 + PyQt BaseApp).
+name: Flatpak
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "flatpak/**"
+      - "main.py"
+      - "ui/**"
+      - "core/**"
+      - "icon/**"
+      - "data/**"
+  pull_request:
+    paths:
+      - "flatpak/**"
+      - "main.py"
+      - "ui/**"
+      - "core/**"
+      - "icon/**"
+      - "data/**"
+
+jobs:
+  flatpak:
+    name: Build Flatpak bundle
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: io.github.defcatcher.GuitarHelper.flatpak
+          manifest-path: flatpak/io.github.defcatcher.GuitarHelper.yml
+          cache-key: flatpak-${{ github.sha }}

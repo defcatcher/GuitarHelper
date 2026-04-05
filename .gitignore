@@ -7,11 +7,30 @@ __pycache__/
 build/
 dist/
 
+# Linux release artifacts (see .github/workflows/release.yml)
+AppDir/
+*.AppImage
+
+# flatpak-builder (local test builds)
+.flatpak-builder-build/
+.flatpak-builder/
+repo/
+
 # Virtual environments
 venv/
 env/
 .venv/
 .env/
+
+# Python tooling / packaging
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # IDEs
 .idea/
@@ -22,5 +41,7 @@ env/
 .DS_Store
 Thumbs.db
 
-# Maintainer-only (not shipped to collaborators by default)
+# Maintainer-only / local notes (not for GitHub)
 RELEASE_SETUP.md
+flatpak/FLATHUB.md
+data/README.txt
