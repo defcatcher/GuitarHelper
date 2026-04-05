@@ -37,31 +37,58 @@ Guitar Assistant is designed to be **100% Cross-Platform**. Since the audio engi
 You need **Python 3.9+** installed on your system.
 
 ### 🐧 Linux
-On Linux systems, you will need the `portaudio` development headers to interface with ALSA/PulseAudio/JACK.
+The audio stack uses **PortAudio** (via `sounddevice`) to talk to **ALSA**, **PulseAudio**, or **PipeWire** (and optionally JACK). Install your distro’s PortAudio package (runtime + headers) first, then run the app from a virtual environment as below.
+
+#### Ubuntu / Debian / Mint / Pop!_OS (APT)
+
 ```bash
-# 1. Install PortAudio
 sudo apt-get update
-sudo apt-get install libportaudio2 libportaudiocpp0 portaudio19-dev
+sudo apt-get install -y libportaudio2 libportaudiocpp0 portaudio19-dev python3-venv
+```
 
-# 2. Clone the repository
-git clone https://github.com/yourusername/GuitarAssistant.git
-cd GuitarAssistant
+#### Fedora / RHEL / CentOS Stream (DNF)
 
-# 3. Create a virtual environment & install dependencies
+```bash
+sudo dnf install -y portaudio-devel python3
+```
+
+#### Arch Linux / Manjaro / EndeavourOS (pacman)
+
+```bash
+sudo pacman -S --needed portaudio python
+```
+
+On Arch, the `portaudio` package includes what you need to build and run against the system library.
+
+#### Clone, venv, and run (any distro)
+
+```bash
+git clone https://github.com/defcatcher/GuitarHelper.git
+cd GuitarHelper
+
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# 4. Run the app!
 python main.py
 ```
+
+#### Flatpak (Flathub)
+
+*Not published yet.* When the app is listed on [Flathub](https://flathub.org/), you will be able to install it with:
+
+```bash
+flatpak install flathub io.github.defcatcher.GuitarHelper
+```
+
+or from your distribution’s software center. A Flatpak manifest is maintained in the [`flatpak/`](flatpak/) directory for local builds and future submission.
 
 ### 🍎 macOS
 macOS comes natively equipped with CoreAudio, which PortAudio supports out of the box. *(Fully supports Apple Silicon M1/M2/M3)*.
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/GuitarAssistant.git
-cd GuitarAssistant
+git clone https://github.com/defcatcher/GuitarHelper.git
+cd GuitarHelper
 
 # 2. Create a virtual environment & install dependencies
 python3 -m venv venv
@@ -77,8 +104,8 @@ python main.py
 Windows utilizes WASAPI, DirectSound, or ASIO internally through the framework. No extra `C++` audio headers required.
 ```powershell
 # 1. Clone the repository
-git clone https://github.com/yourusername/GuitarAssistant.git
-cd GuitarAssistant
+git clone https://github.com/defcatcher/GuitarHelper.git
+cd GuitarHelper
 
 # 2. Create a virtual environment & install dependencies
 python -m venv venv
