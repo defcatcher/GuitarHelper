@@ -1,5 +1,5 @@
 # Build desktop artifacts when you publish a GitHub Release (create a tag, then publish the release).
-# Produces: Windows .exe, macOS .dmg, Linux .AppImage (x86_64).
+# Produces: Windows .exe, macOS .dmg, Linux .AppImage (x86_64), Linux Flatpak bundle (x86_64).
 name: Release builds
 
 on:
@@ -135,8 +135,43 @@ jobs:
           name: linux-appimage
           path: GuitarAssistant-x86_64.AppImage
 
+  build-flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: io.github.defcatcher.GuitarHelper.flatpak
+          manifest-path: flatpak/io.github.defcatcher.GuitarHelper.yml
+          cache-key: flatpak-release-${{ github.sha }}
+
+      - name: Normalize Flatpak filename for release
+        run: |
+          set -euxo pipefail
+          shopt -s nullglob
+          matches=(io.github.defcatcher.GuitarHelper*.flatpak)
+          if [ "${#matches[@]}" -ne 1 ]; then
+            echo "Expected exactly one .flatpak bundle"
+            ls -la
+            exit 1
+          fi
+          if [ "${matches[0]}" != io.github.defcatcher.GuitarHelper-x86_64.flatpak ]; then
+            mv "${matches[0]}" io.github.defcatcher.GuitarHelper-x86_64.flatpak
+          fi
+          ls -la io.github.defcatcher.GuitarHelper-x86_64.flatpak
+
+      - name: Upload Flatpak bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-flatpak
+          path: io.github.defcatcher.GuitarHelper-x86_64.flatpak
+
   attach-to-release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build-windows, build-macos, build-linux, build-flatpak]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -152,5 +187,6 @@ jobs:
             release-assets/GuitarAssistant-Windows-x86_64.exe
             release-assets/GuitarAssistant-macOS.dmg
             release-assets/GuitarAssistant-x86_64.AppImage
+            release-assets/io.github.defcatcher.GuitarHelper-x86_64.flatpak
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

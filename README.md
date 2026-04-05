@@ -83,6 +83,14 @@ flatpak install flathub io.github.defcatcher.GuitarHelper
 
 or from your distribution’s software center. A Flatpak manifest is maintained in the [`flatpak/`](flatpak/) directory for local builds and future submission.
 
+**Flatpak from GitHub (no Flathub):** each [GitHub Release](https://github.com/defcatcher/GuitarHelper/releases) includes `io.github.defcatcher.GuitarHelper-x86_64.flatpak`. Install with:
+
+```bash
+flatpak install --user ./io.github.defcatcher.GuitarHelper-x86_64.flatpak
+```
+
+(If your browser saved a `.zip`, unpack it — the installable file is the `.flatpak` inside.)
+
 ### 🍎 macOS
 macOS comes natively equipped with CoreAudio, which PortAudio supports out of the box. *(Fully supports Apple Silicon M1/M2/M3)*.
 ```bash
@@ -115,6 +123,35 @@ pip install -r requirements.txt
 # 3. Run the app!
 python main.py
 ```
+
+---
+
+## 📦 GitHub Releases (pre-built binaries)
+
+Maintainers ship **Windows `.exe`**, **macOS `.dmg`**, **Linux AppImage**, and **Linux Flatpak** on each published release.
+
+### If you maintain this repository
+
+1. **Commit and push** everything you want in the release (e.g. on `main`).
+2. **Create a git tag** (example for version `v0.1.0`):
+   ```bash
+   git tag -a v0.1.0 -m "v0.1.0"
+   git push origin v0.1.0
+   ```
+3. On GitHub open **Releases → Draft a new release** (or create release from the tag).
+4. Choose the tag, set the title and release notes, then click **Publish release**.
+5. Wait for the workflow **Release builds** (Actions tab). It builds all platforms and **uploads files to the same release** (may take **15–30+ minutes** because of the Flatpak job).
+6. Refresh the release page and confirm the assets: `.exe`, `.dmg`, `.AppImage`, `.flatpak`.
+
+If any job fails, open the failed run in **Actions**, read the log, fix the workflow or manifest, tag a new patch release if needed.
+
+### If you only want to install
+
+1. Open **[Releases](https://github.com/defcatcher/GuitarHelper/releases)**.
+2. Download the file for your OS (Flatpak: `io.github.defcatcher.GuitarHelper-x86_64.flatpak`).
+3. **Linux Flatpak:** `flatpak install --user /path/to/io.github.defcatcher.GuitarHelper-x86_64.flatpak`  
+   First run may prompt to add the **flathub** remote for runtimes — accept if offered.
+4. Run: `flatpak run io.github.defcatcher.GuitarHelper` or use your app menu (**Guitar Assistant**).
 
 ---
 
