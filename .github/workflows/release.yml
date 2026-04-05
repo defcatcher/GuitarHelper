@@ -1,5 +1,5 @@
 # Build desktop artifacts when you publish a GitHub Release (create a tag, then publish the release).
-# Produces: Windows .zip (single .exe), macOS .dmg, Linux .AppImage (x86_64).
+# Produces: Windows .exe, macOS .dmg, Linux .AppImage (x86_64).
 name: Release builds
 
 on:
@@ -27,15 +27,14 @@ jobs:
       - name: PyInstaller
         run: pyinstaller --noconfirm GuitarAssistant.spec
 
-      - name: Zip
+      - name: Prepare Windows binary
         shell: pwsh
-        run: |
-          Compress-Archive -Path dist/GuitarAssistant.exe -DestinationPath GuitarAssistant-Windows-x86_64.zip -Force
+        run: Copy-Item dist/GuitarAssistant.exe GuitarAssistant-Windows-x86_64.exe
 
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-zip
-          path: GuitarAssistant-Windows-x86_64.zip
+          name: windows-exe
+          path: GuitarAssistant-Windows-x86_64.exe
 
   build-macos:
     runs-on: macos-latest
@@ -150,7 +149,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-assets/GuitarAssistant-Windows-x86_64.zip
+            release-assets/GuitarAssistant-Windows-x86_64.exe
             release-assets/GuitarAssistant-macOS.dmg
             release-assets/GuitarAssistant-x86_64.AppImage
         env:
