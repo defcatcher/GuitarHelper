@@ -7,17 +7,25 @@ capo transposition, and a text editor for lyrics/chords.
 
 from __future__ import annotations
 
+import os
+
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QComboBox, QSpinBox, QPlainTextEdit, QPushButton,
-    QFrame, QSizePolicy, QGridLayout,
+    QFrame, QSizePolicy, QGridLayout, QFileDialog, QMessageBox,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
 from ui.theme import Colors, FONT_FAMILY_MONO, FONT_SIZE_SM, FONT_SIZE_MD, FONT_SIZE_LG, CenteredComboBox
+from core.user_paths import lyrics_library_dir
 from core.music_theory import (
-    CHROMATIC, get_diatonic_chords, capo_display_chords, DiatonicChord, get_scale_notes
+    CHROMATIC,
+    get_diatonic_chords,
+    capo_display_chords,
+    DiatonicChord,
+    get_scale_notes,
+    transpose_chord_name,
 )
 
 
@@ -106,6 +114,7 @@ class NotepadPanel(QWidget):
         self.setMinimumWidth(260)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self._previous_capo = 0
+        self._lyrics_path: str | None = None
         self._setup_ui()
         self._connect_signals()
         self._update_chords()
@@ -168,10 +177,10 @@ class NotepadPanel(QWidget):
         """)
 
         self._capo_spin = QSpinBox()
-        self._capo_spin.setRange(0, 12)
+        self._capo_spin.setRange(-12, 12)
         self._capo_spin.setValue(0)
         self._capo_spin.setFixedHeight(34)
-        self._capo_spin.setSuffix(" fret")
+        self._capo_spin.setSuffix(" st")
         self._capo_spin.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         self._capo_spin.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -234,6 +243,40 @@ class NotepadPanel(QWidget):
         self._editor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout.addWidget(self._editor, stretch=1)
 
+        io_row = QHBoxLayout()
+        io_row.setSpacing(8)
+        self._save_btn = QPushButton("Save")
+        self._load_btn = QPushButton("Load")
+        for b in (self._save_btn, self._load_btn):
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.setFixedHeight(36)
+            b.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {Colors.BG_TERTIARY};
+                    color: {Colors.TEXT_PRIMARY};
+                    border: 1px solid {Colors.BORDER_LIGHT};
+                    border-radius: 8px;
+                    font-weight: bold;
+                    font-size: {FONT_SIZE_SM}px;
+                    padding: 0 16px;
+                }}
+                QPushButton:hover {{
+                    border-color: {Colors.ACCENT};
+                }}
+            """)
+        io_row.addWidget(self._save_btn)
+        io_row.addWidget(self._load_btn)
+        io_row.addStretch()
+        layout.addLayout(io_row)
+
+        self._lyrics_path_label = QLabel("")
+        self._lyrics_path_label.setStyleSheet(f"""
+            color: {Colors.TEXT_MUTED};
+            font-size: {FONT_SIZE_SM - 1}px;
+        """)
+        self._lyrics_path_label.setWordWrap(True)
+        layout.addWidget(self._lyrics_path_label)
+
     def _connect_signals(self):
         self._key_combo.currentTextChanged.connect(self._update_chords)
         self._mode_combo.currentTextChanged.connect(self._update_chords)
@@ -242,6 +285,56 @@ class NotepadPanel(QWidget):
         self._capo_plus.clicked.connect(lambda: self._capo_spin.setValue(self._capo_spin.value() + 1))
         for btn in self._chord_buttons:
             btn.clicked.connect(lambda checked, b=btn: self._insert_chord(b))
+        self._save_btn.clicked.connect(self._save_lyrics)
+        self._load_btn.clicked.connect(self._load_lyrics)
+
+    def _update_lyrics_path_label(self):
+        if self._lyrics_path:
+            self._lyrics_path_label.setText(os.path.basename(self._lyrics_path))
+        else:
+            self._lyrics_path_label.setText("")
+
+    def _save_lyrics(self):
+        path = self._lyrics_path
+        if not path:
+            default = os.path.join(lyrics_library_dir(), "lyrics.txt")
+            path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save lyrics",
+                default,
+                "Text files (*.txt);;All files (*)",
+            )
+            if not path:
+                return
+            if not path.lower().endswith(".txt"):
+                path += ".txt"
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(self._editor.toPlainText())
+            self._lyrics_path = path
+            self._update_lyrics_path_label()
+        except OSError as e:
+            QMessageBox.warning(self, "Save failed", str(e))
+
+    def _load_lyrics(self):
+        default_dir = lyrics_library_dir()
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load lyrics",
+            default_dir,
+            "Text files (*.txt);;All files (*)",
+        )
+        if not path:
+            return
+        try:
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
+        except OSError as e:
+            QMessageBox.warning(self, "Load failed", str(e))
+            return
+        self._editor.setPlainText(text)
+        self._lyrics_path = path
+        self._update_lyrics_path_label()
 
     def _on_capo_changed(self, value: int):
         delta = self._previous_capo - value
@@ -286,8 +379,14 @@ class NotepadPanel(QWidget):
         if capo > 0:
             display_chords = capo_display_chords(base_chords, capo)
             self._capo_label.setText(
-                f"Capo {capo}: shapes are for key of {key}, "
-                f"sounding key shifts up {capo} semitones."
+                f"Capo +{capo}: shapes for key of {key}, "
+                f"sounding pitch is {capo} semitone(s) higher."
+            )
+        elif capo < 0:
+            display_chords = capo_display_chords(base_chords, capo)
+            self._capo_label.setText(
+                f"Transpose {capo}: suggested chords shifted {abs(capo)} semitone(s) down "
+                f"(same shapes as key of {key}, written lower)."
             )
         else:
             display_chords = base_chords
@@ -302,6 +401,7 @@ class NotepadPanel(QWidget):
         # If name contains " → ", use only the shape name
         if ' → ' in chord_name:
             chord_name = chord_name.split(' → ')[0]
+        chord_name = transpose_chord_name(chord_name, 0)
         cursor = self._editor.textCursor()
         cursor.insertText(f"[{chord_name}] ")
         self._editor.setFocus()

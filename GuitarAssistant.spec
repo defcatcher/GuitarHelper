@@ -76,6 +76,10 @@ if is_mac:
         name="GuitarAssistant.app",
         icon=_icon_icns if os.path.isfile(_icon_icns) else None,
         bundle_identifier="com.guitarhelper.guitarassistant",
+        info_plist={
+            "NSMicrophoneUsageDescription": "Guitar Assistant uses the microphone for the tuner.",
+            "NSHighResolutionCapable": True,
+        },
     )
 elif is_win:
     exe = EXE(

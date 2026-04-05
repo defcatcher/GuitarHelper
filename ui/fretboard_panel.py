@@ -13,15 +13,15 @@ import sounddevice as sd
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QComboBox, QSizePolicy, QFrame,
+    QPushButton, QComboBox, QSizePolicy, QFrame, QMessageBox,
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
+from PyQt6.QtCore import Qt, pyqtSignal, QObject
 
 from ui.theme import Colors, FONT_FAMILY, FONT_SIZE_SM, FONT_SIZE_MD, FONT_SIZE_LG, CenteredComboBox
 from ui.fretboard_widget import FretboardWidget
 from ui.tuner_widget import TunerWidget
 from core.music_theory import TUNING_NAMES, get_tuning_freqs
-from core.pitch_detector import detect_pitch, freq_to_note, closest_string
+from core.pitch_detector import detect_pitch, freq_to_note, closest_string, reset_pitch_smoothing
 
 
 class _TunerWorkerSignals(QObject):
@@ -55,6 +55,7 @@ class FretboardPanel(QWidget):
         self._tuning_index: int = 0
         self._tuner_active: bool = False
         self._audio_stream: sd.InputStream | None = None
+        self._tuner_sample_rate: int = 44100
         self._tuner_signals = _TunerWorkerSignals()
 
         self._setup_ui()
@@ -170,8 +171,14 @@ class FretboardPanel(QWidget):
         self._prev_btn.clicked.connect(self._prev_tuning)
         self._next_btn.clicked.connect(self._next_tuning)
         self._tuner_btn.toggled.connect(self._toggle_tuner)
-        self._tuner_signals.pitch_detected.connect(self._on_pitch_detected)
-        self._tuner_signals.no_pitch.connect(self._on_no_pitch)
+        self._tuner_signals.pitch_detected.connect(
+            self._on_pitch_detected,
+            Qt.ConnectionType.QueuedConnection,
+        )
+        self._tuner_signals.no_pitch.connect(
+            self._on_no_pitch,
+            Qt.ConnectionType.QueuedConnection,
+        )
 
     def _populate_mic_list(self):
         """Populate mic dropdown with available input devices."""
@@ -216,26 +223,59 @@ class FretboardPanel(QWidget):
 
     def _start_tuner(self):
         """Start listening to the microphone for pitch detection."""
+        reset_pitch_smoothing()
         device_idx = self._mic_combo.currentData()
         if device_idx is None:
+            try:
+                device_idx = sd.default.device[0]
+            except Exception:
+                device_idx = None
+        if device_idx is None:
+            QMessageBox.warning(
+                self,
+                "Tuner",
+                "No microphone input device found.",
+            )
+            self._tuner_btn.setChecked(False)
             return
 
-        sample_rate = 44100
-        block_size = 2048  # Good balance for YIN accuracy vs latency
+        try:
+            dev_i = sd.query_devices(device_idx, "input")
+        except Exception:
+            dev_i = None
+
+        sr = 44100
+        channels = 1
+        if dev_i:
+            try:
+                sr = int(float(dev_i.get("default_samplerate") or 44100))
+            except (TypeError, ValueError):
+                sr = 44100
+            mic_ch = int(dev_i.get("max_input_channels") or 1)
+            channels = max(1, min(2, mic_ch))
+
+        self._tuner_sample_rate = sr
+        block_size = 2048
 
         try:
             self._audio_stream = sd.InputStream(
                 device=device_idx,
-                samplerate=sample_rate,
-                channels=1,
-                dtype='float32',
+                samplerate=sr,
+                channels=channels,
+                dtype="float32",
                 blocksize=block_size,
-                latency='low',
+                latency="low",
                 callback=self._audio_callback,
             )
             self._audio_stream.start()
         except Exception as e:
-            print(f"Tuner start error: {e}")
+            QMessageBox.warning(
+                self,
+                "Tuner",
+                f"Could not open the microphone:\n{e}\n\n"
+                "On macOS: System Settings → Privacy & Security → Microphone — "
+                "enable access for Guitar Assistant (or Terminal if you run from source).",
+            )
             self._tuner_btn.setChecked(False)
 
     def _stop_tuner(self):
@@ -256,8 +296,12 @@ class FretboardPanel(QWidget):
         if status:
             return
 
-        signal = indata[:, 0]  # mono
-        freq = detect_pitch(signal, sample_rate=44100)
+        if indata.shape[1] > 1:
+            signal = np.mean(indata, axis=1)
+        else:
+            signal = indata[:, 0]
+
+        freq = detect_pitch(signal, sample_rate=self._tuner_sample_rate)
 
         if freq is None:
             self._tuner_signals.no_pitch.emit()

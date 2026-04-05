@@ -61,18 +61,27 @@ FONT_SIZE_XXL = 32
 
 class CenteredComboBox(QComboBox):
     """QComboBox that centers its displayed text."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+
+    def showPopup(self):
+        view = self.view()
+        w = max(self.width(), view.sizeHintForColumn(0) + 32, 200)
+        view.setMinimumWidth(w)
+        super().showPopup()
+
     def paintEvent(self, event):
         painter = QPainter(self)
         opt = QStyleOptionComboBox()
         self.initStyleOption(opt)
-        
-        # Draw background and base styling
+
         self.style().drawComplexControl(QStyle.ComplexControl.CC_ComboBox, opt, painter, self)
-        
-        # Draw centered text
+
         text = self.currentText()
         painter.setPen(QColor(Colors.TEXT_PRIMARY))
-        painter.drawText(opt.rect, Qt.AlignmentFlag.AlignCenter, text)
+        r = opt.rect.adjusted(8, 0, -8, 0)
+        painter.drawText(r, Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter, text)
 
 
 # ── Global Stylesheet ────────────────────────────────────────────────────────
@@ -140,6 +149,8 @@ QComboBox QAbstractItemView {{
     color: {Colors.TEXT_PRIMARY};
     border: 1px solid {Colors.BORDER_LIGHT};
     border-radius: 8px;
+    padding: 4px 8px;
+    min-height: 1.5em;
     selection-background-color: {Colors.SECONDARY_HOVER};
     selection-color: {Colors.TEXT_PRIMARY};
     outline: none;
@@ -228,7 +239,6 @@ QToolTip {{
     border: none;
     border-radius: 8px;
     padding: 6px 12px;
-}}
 }}
 """
 

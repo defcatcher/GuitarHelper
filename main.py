@@ -31,6 +31,8 @@ def main():
     os.environ['QT_ENABLE_HIGHDPI_SCALING'] = '1'
 
     app = QApplication(sys.argv)
+    if sys.platform == "darwin":
+        app.setStyle("Fusion")
     app.setApplicationName("Guitar Assistant")
     app.setOrganizationName("GuitarHelper")
 

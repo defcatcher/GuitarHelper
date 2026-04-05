@@ -156,12 +156,21 @@ _CHORD_RE = re.compile(
 
 def transpose_chord_name(chord: str, semitones: int) -> str:
     """Transpose a single chord name by the given number of semitones."""
-    m = _CHORD_RE.match(chord)
+    t = chord.strip()
+    t = t.replace("\u266f", "#").replace("\u266d", "b").replace("\u266e", "")
+    t = re.sub(r"([A-G])#+", r"\1#", t)
+    m = re.match(r"^([A-G])([#b]?)(.*)$", t)
     if not m:
         return chord
-    root = normalize_note(m.group(1))
-    suffix = chord[m.end(1):]
-    new_root = note_from_index(note_index(root) + semitones)
+    letter, acc, suffix = m.group(1), m.group(2), m.group(3)
+    root_token = letter + acc if acc else letter
+    try:
+        root_norm = normalize_note(root_token)
+    except ValueError:
+        return chord
+    if semitones == 0:
+        return letter + acc + suffix
+    new_root = note_from_index(note_index(root_norm) + semitones)
     return new_root + suffix
 
 def capo_transpose(text: str, capo_fret: int) -> str:
@@ -181,6 +190,7 @@ def capo_display_chords(chords: list[DiatonicChord], capo_fret: int) -> list[Dia
     """
     Return new DiatonicChord list showing how chord shapes transpose with a capo.
     E.g., if key=C and capo=2, a 'C shape' now sounds like 'D'.
+    Negative values transpose down (chart / virtual capo).
     """
     if capo_fret == 0:
         return chords
