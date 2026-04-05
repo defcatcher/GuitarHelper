@@ -1,0 +1,2 @@
+# Frozen builds (PyInstaller). Used by CI and local packaging.
+pyinstaller>=6.3.0

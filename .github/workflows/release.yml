@@ -1,0 +1,157 @@
+# Build desktop artifacts when you publish a GitHub Release (create a tag, then publish the release).
+# Produces: Windows .zip (single .exe), macOS .dmg, Linux .AppImage (x86_64).
+name: Release builds
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+
+      - name: PyInstaller
+        run: pyinstaller --noconfirm GuitarAssistant.spec
+
+      - name: Zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/GuitarAssistant.exe -DestinationPath GuitarAssistant-Windows-x86_64.zip -Force
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: GuitarAssistant-Windows-x86_64.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+
+      - name: PyInstaller
+        run: pyinstaller --noconfirm GuitarAssistant.spec
+
+      - name: Create DMG
+        run: |
+          hdiutil create -volname "Guitar Assistant" -srcfolder dist/GuitarAssistant.app -ov -fs HFS+ -format UDZO GuitarAssistant-macOS.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: GuitarAssistant-macOS.dmg
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libportaudio2 \
+            libxkbcommon-x11-0 \
+            libegl1 \
+            libgl1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+
+      - name: PyInstaller (onedir)
+        run: pyinstaller --noconfirm GuitarAssistant.spec
+
+      - name: AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          set -euxo pipefail
+          wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool.AppImage
+          chmod +x appimagetool.AppImage
+
+          rm -rf AppDir
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications
+          cp -a dist/GuitarAssistant/. AppDir/usr/bin/
+
+          test -f icon/guitarassistant.png
+          cp icon/guitarassistant.png AppDir/guitarassistant.png
+          cp icon/guitarassistant.png AppDir/.DirIcon
+
+          cat > AppDir/GuitarAssistant.desktop <<'DESKTOP'
+          [Desktop Entry]
+          Type=Application
+          Name=Guitar Assistant
+          Comment=Guitar practice assistant
+          Exec=GuitarAssistant
+          Icon=guitarassistant
+          Categories=Audio;Education;
+          Terminal=false
+          DESKTOP
+          sed -i 's/^[[:space:]]*//' AppDir/GuitarAssistant.desktop
+          cp AppDir/GuitarAssistant.desktop AppDir/usr/share/applications/
+
+          printf '%s\n' \
+            '#!/bin/bash' \
+            'SELF=$(readlink -f "$0")' \
+            'HERE=${SELF%/*}' \
+            'export PATH="${HERE}/usr/bin:${PATH}"' \
+            'cd "${HERE}/usr/bin"' \
+            'exec ./GuitarAssistant "$@"' \
+            > AppDir/AppRun
+          chmod +x AppDir/AppRun
+          chmod +x AppDir/usr/bin/GuitarAssistant
+
+          ./appimagetool.AppImage AppDir "GuitarAssistant-x86_64.AppImage"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: GuitarAssistant-x86_64.AppImage
+
+  attach-to-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: "*"
+          merge-multiple: true
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/GuitarAssistant-Windows-x86_64.zip
+            release-assets/GuitarAssistant-macOS.dmg
+            release-assets/GuitarAssistant-x86_64.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
