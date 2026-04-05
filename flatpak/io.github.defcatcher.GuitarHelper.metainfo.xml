@@ -17,6 +17,7 @@
   </developer>
   <url type="homepage">https://github.com/defcatcher/GuitarHelper</url>
   <url type="bugtracker">https://github.com/defcatcher/GuitarHelper/issues</url>
+  <url type="vcs">https://github.com/defcatcher/GuitarHelper</url>
   <content_rating type="oars-1.1"/>
   <screenshots>
     <screenshot type="default">

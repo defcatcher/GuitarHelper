@@ -5,4 +5,5 @@ Comment=Guitar practice assistant — tuner, metronome, notepad, fretboard
 Exec=guitarhelper
 Icon=io.github.defcatcher.GuitarHelper
 Categories=Audio;Education;
+Keywords=Guitar;Tuner;Metronome;Music;
 Terminal=false

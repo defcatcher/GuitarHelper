@@ -38,12 +38,27 @@ modules:
         url: https://files.portaudio.com/archives/pa_stable_v190700_20210406.tgz
         sha256: 47efbf42c77c19a05d22e627d42873e991ec0c1357219c0d74ce6a2948cb2def
 
+  - name: portaudio-license
+    buildsystem: simple
+    build-commands:
+      - install -Dm0644 portaudio-LICENSE.txt ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/portaudio/LICENSE.txt
+    sources:
+      - type: file
+        url: https://raw.githubusercontent.com/PortAudio/portaudio/master/LICENSE.txt
+        sha256: ec52a1952d701f94e5135719a47376da4ee0b4a0201f1cafb49f61db6480ac3d
+        dest-filename: portaudio-LICENSE.txt
+
   - name: python3-numpy
     buildsystem: simple
     build-commands:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
           --prefix=${FLATPAK_DEST} "numpy==2.4.4" --no-build-isolation
+      - install -Dm0644 numpy-LICENSE.txt ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/numpy/LICENSE.txt
     sources:
+      - type: file
+        url: https://raw.githubusercontent.com/numpy/numpy/v2.4.4/LICENSE.txt
+        sha256: 1be1df33863f97a7bc1c4d67980bd6c69c9a6fef0a5ee76e6ad6cb91e56e8491
+        dest-filename: numpy-LICENSE.txt
       - type: file
         only-arches: [x86_64]
         url: https://files.pythonhosted.org/packages/d1/73/a9d864e42a01896bb5974475438f16086be9ba1f0d19d0bb7a07427c4a8b/numpy-2.4.4-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
@@ -58,7 +73,22 @@ modules:
     build-commands:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
           --prefix=${FLATPAK_DEST} "sounddevice==0.5.5" --no-build-isolation
+      - install -Dm0644 sounddevice-LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/sounddevice/LICENSE
+      - install -Dm0644 cffi-LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/cffi/LICENSE
+      - install -Dm0644 pycparser-LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/pycparser/LICENSE
     sources:
+      - type: file
+        url: https://raw.githubusercontent.com/spatialaudio/python-sounddevice/0.5.5/LICENSE
+        sha256: b6eea21bbafbaf7a2177e492f1be6b5efc6f4e708b1980773de51cdaa52f8211
+        dest-filename: sounddevice-LICENSE
+      - type: file
+        url: https://raw.githubusercontent.com/python-cffi/cffi/v2.0.0/LICENSE
+        sha256: 5ba24ddc57067f9249add644c3afc41a5d6dc37e23433ef759d95df370b0af63
+        dest-filename: cffi-LICENSE
+      - type: file
+        url: https://raw.githubusercontent.com/eliben/pycparser/master/LICENSE
+        sha256: 0c846399369ea76ddd7b5c44fe6d16497415fcf015f5cbb508c24bf98b81c5b1
+        dest-filename: pycparser-LICENSE
       - type: file
         only-arches: [x86_64]
         url: https://files.pythonhosted.org/packages/98/df/0a1755e750013a2081e863e7cd37e0cdd02664372c754e5560099eb7aa44/cffi-2.0.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
@@ -79,6 +109,7 @@ modules:
     build-commands:
       - install -d ${FLATPAK_DEST}/share/guitarhelper
       - cp -a main.py ui core ${FLATPAK_DEST}/share/guitarhelper/
+      - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/${FLATPAK_ID}/guitarhelper/LICENSE
       - install -Dm644 icon/guitarassistant.png ${FLATPAK_DEST}/share/icons/hicolor/256x256/apps/${FLATPAK_ID}.png
       - install -Dm644 flatpak/io.github.defcatcher.GuitarHelper.desktop ${FLATPAK_DEST}/share/applications/${FLATPAK_ID}.desktop
       - install -Dm644 flatpak/io.github.defcatcher.GuitarHelper.metainfo.xml ${FLATPAK_DEST}/share/metainfo/${FLATPAK_ID}.metainfo.xml

@@ -44,4 +44,5 @@ Thumbs.db
 # Maintainer-only / local notes (not for GitHub)
 RELEASE_SETUP.md
 flatpak/FLATHUB.md
+docs/flathub-submission.md
 data/README.txt
